@@ -24,38 +24,38 @@
     {{-- Thanh điều hướng Navbar --}}
     @include('partials.navbar')
 
-    {{-- Thêm class flex-grow-1 vào đây để bọc nội dung và ép Footer xuống đáy luôn luôn chuẩn --}}
+    {{-- Thêm class flex-grow-1 bọc nội dung và ép Footer xuống đáy --}}
     <div class="container mt-3 flex-grow-1">
 
-        {{-- KHU VỰC THÊM MỚI: Tự động bắt mọi trạng thái thông báo hệ thống --}}
-        @foreach (['success', 'danger', 'warning', 'info'] as $type)
-            @if (session($type) || ($type === 'danger' && session('error')))
-                @php 
-                    $msg = session($type) ?? session('error');
-                    $icon = match ($type) {
-                        'success' => '✅',
-                        'danger' => '❌',
-                        'warning' => '⚠',
-                        default => 'ℹ',
-                    };
-                @endphp
-                <div class="alert alert-{{ $type }} alert-dismissible fade show" role="alert">
-                    {{ $icon }} {{ $msg }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-        @endforeach
+        {{-- Nhúng Blade partial chứa các Flash Message --}}
+        @include('partials.flash-messages')
 
         {{-- Nội dung thay đổi động của các view con --}}
         @yield('content')
-        
+
     </div>
 
     {{-- Phần Footer --}}
-    @include('partials.footer') 
+    @include('partials.footer')
 
-    {{-- Thêm Script Bootstrap 5 ở cuối để các nút đóng (x) alert hoặc menu dropdown hoạt động được --}}
+    {{-- Thêm Script Bootstrap 5 ở cuối để các nút đóng (x) alert hoạt động được --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    {{-- JavaScript tự động ẩn Flash Message sau 5 giây (Auto-dismiss) --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.alert-dismissible').forEach(function (alert) {
+                setTimeout(function () {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    if (bsAlert) {
+                        bsAlert.close();
+                    }
+                }, 5000); // 5000ms = 5 giây
+            });
+        });
+    </script>
+
+    {{-- Vùng chờ đẩy script của các view con --}}
     @stack('scripts')
 </body>
 

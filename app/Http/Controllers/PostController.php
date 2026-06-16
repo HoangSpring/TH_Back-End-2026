@@ -2,63 +2,91 @@
 
 namespace App\Http\Controllers;
 
-// Đã import Form Request mới thay thế cho Request mặc định
+// Import đầy đủ các class Request cần thiết
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    // 1. Hiển thị danh sách bài viết
-    public function index()
+    /**
+     * 1. Hiển thị danh sách bài viết (Kèm phân trang)
+     */
+    public function index(): View
     {
         $posts = Post::latest()->paginate(10);
         $totalPosts = $posts->total();
+
         return view('posts.index', compact('posts', 'totalPosts'));
     }
 
-    // 2. Form tạo mới
-    public function create()
+    /**
+     * 2. Giao diện form tạo mới bài viết
+     */
+    public function create(): View
     {
         return view('posts.create');
     }
 
-    // 3. Xử lý lưu (Sử dụng StorePostRequest gọn gàng)
-    public function store(StorePostRequest $request)
+    /**
+     * 3. Xử lý lưu bài viết mới (Áp dụng PRG Pattern)
+     */
+    public function store(StorePostRequest $request): RedirectResponse
     {
-        // Mass-assignment an toàn tuyệt đối với dữ liệu đã được validate
-        Post::create($request->validated() + ['user_id' => 1]);
+        // Tạo bài viết với dữ liệu đã qua kiểm duyệt an toàn
+        $post = Post::create($request->validated() + ['user_id' => 1]);
 
-        return redirect()->route('posts.index')
-            ->with('success', 'Tạo bài viết thành công!');
+        // Chuyển hướng sang trang chi tiết (show) kèm Flash Message có tên bài viết
+        return redirect()
+            ->route('posts.show', $post)
+            ->with('success', 'Tạo bài viết "' . $post->title . '" thành công!');
     }
 
-    // 4. Xem chi tiết
-    public function show(Post $post)
+    /**
+     * 4. Xem chi tiết bài viết (Sử dụng Route Model Binding)
+     */
+    public function show(Post $post): View
     {
         return view('posts.show', compact('post'));
     }
 
-    // 5. Form chỉnh sửa
-    public function edit(Post $post)
+    /**
+     * 5. Giao diện form chỉnh sửa bài viết
+     */
+    public function edit(Post $post): View
     {
         return view('posts.edit', compact('post'));
     }
 
-    // 6. Xử lý cập nhật (Sử dụng UpdatePostRequest)
-    public function update(UpdatePostRequest $request, Post $post)
+    /**
+     * 6. Xử lý cập nhật thông tin bài viết
+     */
+    public function update(UpdatePostRequest $request, Post $post): RedirectResponse
     {
+        // Cập nhật dữ liệu sạch
         $post->update($request->validated());
 
-        return redirect()->route('posts.edit', $post)
+        // Chuyển hướng sang trang chi tiết (show) để kiểm tra kết quả vừa sửa
+        return redirect()
+            ->route('posts.show', $post)
             ->with('success', 'Cập nhật bài viết thành công!');
     }
 
-    // 7. Xóa bài viết
-    public function destroy(Post $post)
+    /**
+     * 7. Xóa bài viết khỏi hệ thống
+     */
+    public function destroy(Post $post): RedirectResponse
     {
+        // ✅ Lưu lại tiêu đề TRƯỚC KHI xóa để đưa vào thông báo Flash
+        $title = $post->title;
+
         $post->delete();
-        return redirect()->route('posts.index')
-            ->with('success', 'Đã xóa bài viết.');
+
+        // Quay lại danh sách và thông báo rõ bài nào vừa bị xóa
+        return redirect()
+            ->route('posts.index')
+            ->with('success', 'Đã xóa bài viết: "' . $title . '"');
     }
 }
