@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-// ĐÃ SỬA: Import Model Post để tương tác với Database thật
+// Đã import Form Request mới thay thế cho Request mặc định
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 
 class PostController extends Controller
@@ -12,76 +13,42 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::latest()->paginate(10);
-
-        // ĐÃ SỬA: Tính toán tổng số bài viết để truyền sang View tránh lỗi Undefined variable
         $totalPosts = $posts->total();
-
         return view('posts.index', compact('posts', 'totalPosts'));
     }
 
-    // 2. Hiển thị form tạo bài viết mới
+    // 2. Form tạo mới
     public function create()
     {
         return view('posts.create');
     }
 
-    // 3. Xử lý lưu bài viết mới (Đã có Validation tiếng Việt)
-    public function store(Request $request)
+    // 3. Xử lý lưu (Sử dụng StorePostRequest gọn gàng)
+    public function store(StorePostRequest $request)
     {
-        $validated = $request->validate(
-            [
-                'title' => 'required|string|min:5|max:255',
-                'content' => 'required|string|min:10',
-            ],
-            [
-                'title.required' => 'Tiêu đề bài viết không được để trống.',
-                'title.min' => 'Tiêu đề phải có ít nhất :min ký tự.',
-                'title.max' => 'Tiêu đề không được vượt quá :max ký tự.',
-                'content.required' => 'Nội dung bài viết không được để trống.',
-                'content.min' => 'Nội dung phải có ít nhất :min ký tự.',
-            ]
-        );
-
-        Post::create([
-            'title' => $validated['title'],
-            'content' => $validated['content'],
-            'user_id' => 1, // Tạm thời giả lập user_id = 1
-        ]);
+        // Mass-assignment an toàn tuyệt đối với dữ liệu đã được validate
+        Post::create($request->validated() + ['user_id' => 1]);
 
         return redirect()->route('posts.index')
             ->with('success', 'Tạo bài viết thành công!');
     }
 
-    // 4. Xem chi tiết bài viết
+    // 4. Xem chi tiết
     public function show(Post $post)
     {
         return view('posts.show', compact('post'));
     }
 
-    // 5. Hiển thị form chỉnh sửa bài viết
+    // 5. Form chỉnh sửa
     public function edit(Post $post)
     {
         return view('posts.edit', compact('post'));
     }
 
-    // 6. Xử lý cập nhật bài viết (Đã có Validation tiếng Việt)
-    public function update(Request $request, Post $post)
+    // 6. Xử lý cập nhật (Sử dụng UpdatePostRequest)
+    public function update(UpdatePostRequest $request, Post $post)
     {
-        $validated = $request->validate(
-            [
-                'title' => 'required|string|min:5|max:255',
-                'content' => 'required|string|min:10',
-            ],
-            [
-                'title.required' => 'Tiêu đề bài viết không được để trống.',
-                'title.min' => 'Tiêu đề phải có ít nhất :min ký tự.',
-                'title.max' => 'Tiêu đề không được vượt quá :max ký tự.',
-                'content.required' => 'Nội dung bài viết không được để trống.',
-                'content.min' => 'Nội dung phải có ít nhất :min ký tự.',
-            ]
-        );
-
-        $post->update($validated);
+        $post->update($request->validated());
 
         return redirect()->route('posts.edit', $post)
             ->with('success', 'Cập nhật bài viết thành công!');
