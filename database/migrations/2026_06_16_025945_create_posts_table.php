@@ -11,11 +11,21 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('posts', function (Blueprint $table) {
-            $table->id(); // Cột id tự tăng
-            $table->string('title'); // Cột tiêu đề bài viết
-            $table->text('content'); // Cột nội dung bài viết
-            $table->unsignedBigInteger('user_id')->default(1); // Giả lập user_id để liên kết dữ liệu
-            $table->timestamps(); // Tạo 2 cột tự động: created_at và updated_at
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->string('slug')->unique();
+            $table->text('content');
+
+            // ✅ Đã sửa: Xóa dòng lỗi $table->text('') và giữ lại excerpt chuẩn hóa
+            $table->string('excerpt', 255)->nullable();
+
+            // ✅ Thêm mốc thời gian đăng bài phục vụ scopePublished() hoạt động đúng đề bài
+            $table->timestamp('published_at')->nullable();
+
+            $table->string('status')->default('draft');
+            $table->timestamps();
         });
     }
 

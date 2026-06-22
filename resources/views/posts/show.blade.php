@@ -1,74 +1,60 @@
 @extends('layouts.app')
+
 @section('title', $post->title)
+
 @section('content')
+    <div class="container mt-4">
+        {{-- Chi tiết bài viết --}}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="h2 mb-2">{{ $post->title }}</h1>
 
-    {{-- Breadcrumb điều hướng --}}
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="/">Trang chủ</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{{ route('posts.index') }}">Bài viết</a>
-            </li>
-            <li class="breadcrumb-item active">{{ Str::limit($post->title, 40) }}</li>
-        </ol>
-    </nav>
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h1 class="h2 mb-3">{{$post->title}}</h1>
-                    {{-- Meta thông tin --}}
-                    <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-                        <span class="text-muted">👤 {{ $post->author }}</span>
-                        <span class="text-muted">📅 {{ $post->created_at->format('d/m/Y H:i')  }}</span>
-                        <x-badge :status="$post->status"></x-badge>
-                    </div>
-                    {{-- Nội dung --}}
-                    <div class="post-content" style="line-height: 1.8; font-size: 1.05rem;">
-                        {{ $post->content }}
-                    </div>
+                <div class="text-muted mb-3">
+                    👤 Tác giả: <strong>{{ $post->user->name ?? 'Ẩn danh' }}</strong> &nbsp;·&nbsp;
+                    📅 {{ $post->created_at->format('d/m/Y H:i') }}
                 </div>
-            </div>
 
-            {{-- Nút điều hướng dưới --}}
-            <div class="d-flex justify-content-between mb-4">
-                <a href="{{ route('posts.index') }}" class="btn btn-outline-secondary">&larr; Quay lại danh sách</a>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-primary">✏ Sửa bài</a>
-                    <form action="{{ route('posts.destroy', $post->id) }}" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger"
-                            onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">🗑 Xóa</button>
-                    </form>
+                {{-- HIỂN THỊ TẤT CẢ TAG CÓ LINK DẪN ĐẾN TRANG TAG --}}
+                <div class="mb-4">
+                    @forelse($post->tags as $tag)
+                        <a href="{{ route('tags.index', $tag->slug) }}" class="badge bg-secondary text-decoration-none me-1"
+                            style="font-size: 0.85rem; font-weight: 500;">
+                            🏷️ {{ $tag->name }}
+                        </a>
+                    @empty
+                        <span class="text-muted small">Chưa có thẻ tag nào cho bài viết này.</span>
+                    @endforelse
+                </div>
+
+                <hr>
+                <div class="post-content fs-5" style="line-height: 1.8;">
+                    {!! nl2br(e($post->content)) !!}
                 </div>
             </div>
         </div>
 
-        {{-- Sidebar bên phải --}}
-        <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light"><strong>📋 Thông tin bài viết</strong></div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>ID:</strong> {{ $post->id }}</li>
-                    <li class="list-group-item"><strong>Tác giả:</strong> {{ $post->author }}</li>
-                    <li class="list-group-item">
-                        <strong>Ngày đăng:</strong><br>
-                        {{ $post->created_at->format('d/m/Y') }} ({{ $post->created_at->diffForHumans() }})
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Trạng thái:</strong>
-                        @if ($post->status === 'published')
-                            <span class="text-success fw-bold">Đã xuất bản</span>
-                        @else
-                            <span class="text-warning fw-bold">Bản nháp</span>
-                        @endif
-                    </li>
-                </ul>
+        {{-- HIỂN THỊ DANH SÁCH COMMENT KÈM TÊN TÁC GIẢ VÀ THỜI GIAN ĐĂNG --}}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">💬 Bình luận ({{ $post->comments_count }})</h5>
+            </div>
+            <div class="card-body">
+                @forelse($post->approvedComments as $comment)
+                    <div class="p-3 mb-2 bg-light rounded border-start border-primary border-3 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-dark">👤 {{ $comment->user->name ?? 'Người dùng ẩn danh' }}</strong>
+                            <small class="text-muted">🕒 {{ $comment->created_at->diffForHumans() }}</small>
+                        </div>
+                        <p class="mb-0 text-secondary mt-1" style="font-size: 0.95rem;">
+                            {{ $comment->body }}
+                        </p>
+                    </div>
+                @empty
+                    <p class="text-muted text-center py-3 mb-0">Chưa có bình luận nào được phê duyệt cho bài viết này.</p>
+                @endforelse
             </div>
         </div>
+
+        <a href="{{ route('posts.index') }}" class="btn btn-outline-secondary">⬅ Quay lại danh sách</a>
     </div>
-
 @endsection
