@@ -8,11 +8,13 @@ use App\Models\Tag;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
     /**
-     * 🌟 1. CẬP NHẬT (LAB 2): Hiển thị danh sách bài viết kết hợp bộ lọc tìm kiếm nâng cao (when)
+     * 1. Hiển thị danh sách bài viết kết hợp bộ lọc tìm kiếm nâng cao
      */
     public function index(Request $request)
     {
@@ -41,7 +43,6 @@ class PostController extends Controller
             ->paginate(10)
             ->withQueryString();                   // Giữ lại các tham số lọc trên URL khi bấm chuyển trang
 
-        // Lấy thêm toàn bộ danh mục để truyền xuống đổ vào thanh Dropdown Filter của View
         $categories = Category::all();
 
         return view('posts.index', compact('posts', 'categories'));
@@ -61,10 +62,15 @@ class PostController extends Controller
     public function store(StorePostRequest $request)
     {
         $data = $request->validated();
-        $data['slug'] = \Illuminate\Support\Str::slug($data['title']);
 
-        $data['user_id'] = 1;
-        $data['category_id'] = 1;
+        // Sinh slug an toàn kèm timestamp chống trùng lặp gây lỗi 500 hỏng trang
+        $data['slug'] = Str::slug($data['title']) . '-' . time();
+        $data['user_id'] = Auth::id();
+        $data['category_id'] = 1; // Mặc định gán danh mục 1
+
+        // Đảm bảo bài viết thỏa mãn scopePublished để hiển thị ngay lập tức
+        $data['status'] = 'published';
+        $data['published_at'] = now();
 
         Post::create($data);
 
@@ -77,7 +83,6 @@ class PostController extends Controller
      */
     public function show($id)
     {
-
         $post = Post::with(['user:id,name', 'comments.user', 'tags'])
             ->withCount('comments')
             ->findOrFail($id);
@@ -98,14 +103,21 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
-        $post->update($request->validated());
+        $data = $request->validated();
+
+        // Tự động cập nhật lại slug nếu người dùng thay đổi tiêu đề bài viết lúc sửa
+        if (isset($data['title'])) {
+            $data['slug'] = Str::slug($data['title']) . '-' . time();
+        }
+
+        $post->update($data);
 
         return redirect()->route('posts.index')
             ->with('success', 'Đã cập nhật bài viết thành công.');
     }
 
     /**
-     * 7. Xóa bài viết khỏi hệ thống (Xóa mềm)
+     * 7. Xóa bài viết khỏi hệ thống (Xóa mềm - Soft Delete)
      */
     public function destroy(Post $post)
     {
@@ -124,6 +136,7 @@ class PostController extends Controller
      */
     public function trashed()
     {
+        // Chỉ lấy những bài viết đã bị xóa mềm, sắp xếp theo thời gian xóa mới nhất
         $posts = Post::onlyTrashed()->orderBy('deleted_at', 'desc')->paginate(10);
 
         return view('posts.trashed', compact('posts'));
@@ -134,15 +147,19 @@ class PostController extends Controller
      */
     public function restore($id)
     {
-        Post::onlyTrashed()->findOrFail($id)->restore();
+        // 🌟 CẬP NHẬT ĐỒNG BỘ: Tìm bài viết trong thùng rác
+        $post = Post::onlyTrashed()->findOrFail($id);
+
+        // Cập nhật lại trạng thái xuất bản đề phòng bài cũ là bản nháp (draft)
+        $post->status = 'published';
+        $post->published_at = now();
+
+        // Khôi phục bài viết trở lại danh sách hoạt động
+        $post->restore();
 
         return redirect()->route('posts.trashed')
-            ->with('success', 'Đã khôi phục bài viết thành công về danh sách.');
+            ->with('success', 'Đã khôi phục bài viết thành công về danh sách chính.');
     }
-
-    // =========================================================================
-    // 📂 PHẦN LIỆT KÊ BÀI VIẾT THEO THẺ TAG
-    // =========================================================================
 
     /**
      * 10. Trang danh sách lọc bài viết theo từng Tag cụ thể thông qua Scope

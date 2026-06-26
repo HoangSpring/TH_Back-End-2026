@@ -1,86 +1,43 @@
 @extends('layouts.app')
 
-@section('title', 'Trang chủ')
-
-@section('page-header')
-    <h1 class="display-5 fw-bold">
-        🏠 Chào mừng đến MyLaravelApp!
-    </h1>
-
-    <p class="lead mb-0">
-        Ứng dụng demo học Laravel – Đại học Phú Xuân
-    </p>
-@endsection
+@section('title', 'Phú Xuân Blog - Trang chủ')
 
 @section('content')
-
-    <div class="row g-4">
+    <div class="row g-4 mt-2">
         <div class="col-md-4">
-            <div class="card h-100 shadow-sm">
-
+            <div class="card h-100 shadow-sm border-0 bg-white p-3">
                 <div class="card-body">
-
-                    <h5 class="card-title">
-                        📝 Blog
+                    <h5 class="card-title mb-2 d-flex align-items-center">
+                        <span class="me-2">📝</span>Blog
                     </h5>
-
-                    <p class="card-text">
-                        Xem các bài viết mới nhất về Laravel và PHP.
-                    </p>
-
-                    <a href="{{ route('articles.index') }}" class="btn btn-primary btn-sm">
-                        Xem ngay
-                    </a>
-
+                    <p class="card-text text-muted small mb-4">Xem các bài viết mới nhất về Laravel và PHP.</p>
+                    <a href="{{ route('posts.index') }}" class="btn btn-primary btn-sm px-3">Xem ngay</a>
                 </div>
-
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 shadow-sm">
-
+            <div class="card h-100 shadow-sm border-0 bg-white p-3">
                 <div class="card-body">
-
-                    <h5 class="card-title">
-                        🛒 Cửa hàng
+                    <h5 class="card-title mb-2 d-flex align-items-center">
+                        <span class="me-2">🛒</span>Cửa hàng
                     </h5>
-
-                    <p class="card-text">
-                        Khám phá sản phẩm trong cửa hàng online.
-                    </p>
-
-                    <a href="{{ route('shop.products') }}" class="btn btn-success btn-sm">
-                        Mua sắm
-                    </a>
-
+                    <p class="card-text text-muted small mb-4">Khám phá sản phẩm trong cửa hàng online.</p>
+                    <a href="{{ route('products.index') }}" class="btn btn-success btn-sm px-3">Mua hàng</a>
                 </div>
-
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 shadow-sm">
-
+            <div class="card h-100 shadow-sm border-0 bg-white p-3">
                 <div class="card-body">
-
-                    <h5 class="card-title">
-                        ℹ️ Về chúng tôi
+                    <h5 class="card-title mb-2 d-flex align-items-center">
+                        <span class="me-2">ℹ️</span>Về chúng tôi
                     </h5>
-
-                    <p class="card-text">
-                        Tìm hiểu thêm về nhóm phát triển.
-                    </p>
-
-                    <a href="{{ route('about') }}" class="btn btn-secondary btn-sm">
-                        Xem thêm
-                    </a>
-
+                    <p class="card-text text-muted small mb-4">Tìm hiểu thêm về nhóm phát triển.</p>
+                    <a href="#" class="btn btn-secondary btn-sm px-3">Xem thêm</a>
                 </div>
-
             </div>
         </div>
-
     </div>
-
 @endsection

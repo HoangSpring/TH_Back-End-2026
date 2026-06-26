@@ -124,17 +124,21 @@
                 {{-- Nút hành động --}}
                 <div class="mt-3 pt-2 border-top d-flex gap-2">
                     <a href="{{ route('posts.show', $post->id) }}" class="btn btn-sm btn-outline-primary">👁 Xem chi tiết</a>
-                    <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-sm btn-outline-secondary">✏ Sửa</a>
 
-                    {{-- Form xóa --}}
-                    <form action="{{ route('posts.destroy', $post->id) }}" method="POST" style="display:inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Xóa bài viết này?')">
-                            🗑 Xóa
-                        </button>
-                    </form>
+                    {{-- Chỉ hiện nút Sửa/Xóa nếu user đang đăng nhập và là chủ sở hữu bài viết --}}
+                    @if(Auth::check() && Auth::id() === $post->user_id)
+                        <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-sm btn-outline-secondary">✏ Sửa</a>
+
+                        {{-- Form xóa --}}
+                        <form action="{{ route('posts.destroy', $post->id) }}" method="POST" style="display:inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Xóa bài viết này?')">
+                                🗑 Xóa
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>

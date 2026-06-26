@@ -26,10 +26,8 @@
                 {{-- Form gửi request PATCH kích hoạt hàm khôi phục --}}
                 <form action="{{ route('posts.restore', $post->id) }}" method="POST">
                     @csrf
-                    @method('PATCH')
-                    <button type="submit" class="btn btn-sm btn-success">
-                        🔄 Khôi phục bài viết
-                    </button>
+
+                    <button type="submit" class="btn btn-sm btn-success">Khôi phục</button>
                 </form>
             </div>
         </div>
