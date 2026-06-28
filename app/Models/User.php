@@ -2,31 +2,63 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * The attributes that are mass assignable.
      */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role', // 🌟 Bắt buộc phải thêm trường này vào fillable
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // =========================================================================
+    // HELPER METHODS - ĐƯỢC DÙNG TRONG POLICY VÀ GIAO DIỆN BLADE
+    // =========================================================================
+
+    /**
+     * Kiểm tra xem user có phải là Admin tối cao hay không
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Kiểm tra xem user có quyền từ Editor trở lên hay không (Admin bao gồm cả Editor)
+     */
+    public function isEditor(): bool
+    {
+        return in_array($this->role, ['admin', 'editor']);
+    }
+
+    /**
+     * Kiểm tra xem thực thể Bài viết có thuộc quyền sở hữu của User này hay không
+     */
+    public function owns(Post $post): bool
+    {
+        return $this->id === $post->user_id;
     }
 }

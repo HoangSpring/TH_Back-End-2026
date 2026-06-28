@@ -10,41 +10,38 @@ use App\Http\Requests\UpdatePostRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // Giữ lại phục vụ cho hàm authorize() thủ công
 
 class PostController extends Controller
 {
+    use AuthorizesRequests; // Kích hoạt trait để sử dụng phương thức check quyền thủ công ngoài Resource
+
     /**
      * 1. Hiển thị danh sách bài viết kết hợp bộ lọc tìm kiếm nâng cao
      */
     public function index(Request $request)
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:viewAny' từ file Route
         $posts = Post::query()
-            ->published()                          // Gọi Local Scope lọc bài đã đăng và đúng mốc thời gian
-            ->with(["user", "category", "tags"])   // Eager loading tối ưu chống lỗi N+1
-            ->withCount("comments")                // Tích hợp comments_count vào danh sách
+            ->published()
+            ->with(["author", "category", "tags"]) // 🌟 ĐÃ ĐỔI 'user' THÀNH 'author' ĐỂ FIX LỖI 500 WEB
+            ->withCount("comments")
 
-            // Bộ lọc 1: Tìm kiếm theo từ khóa tiêu đề (Nếu có truyền params ?search=...)
             ->when($request->search, function ($q, $search) {
                 $q->where('title', 'like', "%{$search}%");
             })
-
-            // Bộ lọc 2: Lọc theo danh mục bài viết (Nếu có truyền params ?category_id=...)
             ->when($request->category_id, function ($q, $catId) {
-                $q->ofCategory($catId);            // Sử dụng Scope truyền tham số
+                $q->ofCategory($catId);
             })
-
-            // Bộ lọc 3: Sắp xếp dữ liệu (Nếu ?sort=popular xếp theo lượt xem, ngược lại xếp mới nhất)
             ->when($request->sort === 'popular', function ($q) {
-                $q->popular();                     // Sử dụng scopePopular() sắp xếp theo view_count
+                $q->popular();
             }, function ($q) {
-                $q->orderByDesc('published_at');   // Default: Bài viết mới nhất
+                $q->latest();
             })
-
             ->paginate(10)
-            ->withQueryString();                   // Giữ lại các tham số lọc trên URL khi bấm chuyển trang
+            ->withQueryString();
 
         $categories = Category::all();
-
         return view('posts.index', compact('posts', 'categories'));
     }
 
@@ -53,6 +50,7 @@ class PostController extends Controller
      */
     public function create()
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:create' từ file Route
         return view('posts.create');
     }
 
@@ -61,31 +59,28 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:create' từ file Route
         $data = $request->validated();
 
-        // Sinh slug an toàn kèm timestamp chống trùng lặp gây lỗi 500 hỏng trang
         $data['slug'] = Str::slug($data['title']) . '-' . time();
         $data['user_id'] = Auth::id();
-        $data['category_id'] = 1; // Mặc định gán danh mục 1
-
-        // Đảm bảo bài viết thỏa mãn scopePublished để hiển thị ngay lập tức
+        $data['category_id'] = 1;
         $data['status'] = 'published';
         $data['published_at'] = now();
 
         Post::create($data);
 
-        return redirect()->route('posts.index')
-            ->with('success', 'Đã thêm bài viết mới thành công.');
+        return redirect()->route('posts.index')->with('success', 'Đã thêm bài viết mới thành công.');
     }
 
     /**
      * 4. Hiển thị chi tiết một bài viết
      */
-    public function show($id)
+    public function show(Post $post)
     {
-        $post = Post::with(['user:id,name', 'comments.user', 'tags'])
-            ->withCount('comments')
-            ->findOrFail($id);
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:view' từ file Route
+        // 🌟 ĐÃ ĐỔI 'user:id,name' THÀNH 'author:id,name'
+        $post->loadCount('comments')->load(['author:id,name', 'comments.user', 'tags']);
 
         return view('posts.show', compact('post'));
     }
@@ -95,6 +90,7 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:update' từ file Route
         return view('posts.edit', compact('post'));
     }
 
@@ -103,17 +99,16 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:update' từ file Route
         $data = $request->validated();
 
-        // Tự động cập nhật lại slug nếu người dùng thay đổi tiêu đề bài viết lúc sửa
         if (isset($data['title'])) {
             $data['slug'] = Str::slug($data['title']) . '-' . time();
         }
 
         $post->update($data);
 
-        return redirect()->route('posts.index')
-            ->with('success', 'Đã cập nhật bài viết thành công.');
+        return redirect()->route('posts.index')->with('success', 'Đã cập nhật bài viết thành công.');
     }
 
     /**
@@ -121,65 +116,41 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
+        // 🛡️ BẢO MẬT: Được tự động kiểm tra bởi Middleware 'can:delete' từ file Route
         $post->delete();
 
-        return redirect()->route('posts.index')
-            ->with('success', 'Đã chuyển bài viết vào thùng rác thành công.');
+        return redirect()->route('posts.index')->with('success', 'Đã chuyển bài viết vào thùng rác thành công.');
     }
 
     // =========================================================================
-    // 📂 CÁC METHOD PHỤC VỤ THÙNG RÁC - SOFT DELETE 
+    // 📂 CÁC METHOD NGOÀI RESOURCE (KIỂM TRA POLICY THỦ CÔNG BẰNG HÀM AUTHORIZE)
     // =========================================================================
 
-    /**
-     * 8. Giao diện Thùng rác
-     */
     public function trashed()
     {
-        // Chỉ lấy những bài viết đã bị xóa mềm, sắp xếp theo thời gian xóa mới nhất
         $posts = Post::onlyTrashed()->orderBy('deleted_at', 'desc')->paginate(10);
-
         return view('posts.trashed', compact('posts'));
     }
 
-    /**
-     * 9. Khôi phục bài viết từ thùng rác
-     */
     public function restore($id)
     {
-        // 🌟 CẬP NHẬT ĐỒNG BỘ: Tìm bài viết trong thùng rác
         $post = Post::onlyTrashed()->findOrFail($id);
 
-        // Cập nhật lại trạng thái xuất bản đề phòng bài cũ là bản nháp (draft)
+        // Với các phương thức nằm ngoài Resource, ta check Policy thủ công bằng hàm authorize():
+        $this->authorize('restore', $post);
+
         $post->status = 'published';
         $post->published_at = now();
-
-        // Khôi phục bài viết trở lại danh sách hoạt động
         $post->restore();
 
-        return redirect()->route('posts.trashed')
-            ->with('success', 'Đã khôi phục bài viết thành công về danh sách chính.');
+        return redirect()->route('posts.trashed')->with('success', 'Đã khôi phục bài viết thành công.');
     }
 
-    /**
-     * 10. Trang danh sách lọc bài viết theo từng Tag cụ thể thông qua Scope
-     */
     public function tagIndex($slug)
     {
         $tag = Tag::where('slug', $slug)->firstOrFail();
-
-        $posts = Post::select('id', 'user_id', 'category_id', 'title', 'slug', 'content', 'status', 'created_at')
-            ->published()
-            ->byTagSlug($slug)
-            ->with([
-                'user:id,name',
-                'category:id,name',
-                'tags:id,name'
-            ])
-            ->withCount('comments')
-            ->latest()
-            ->paginate(8);
-
+        // 🌟 ĐÃ ĐỔI 'user:id,name' THÀNH 'author:id,name'
+        $posts = Post::published()->byTagSlug($slug)->with(['author:id,name', 'category:id,name', 'tags:id,name'])->withCount('comments')->latest()->paginate(8);
         return view('posts.tag_index', compact('posts', 'tag'));
     }
 }

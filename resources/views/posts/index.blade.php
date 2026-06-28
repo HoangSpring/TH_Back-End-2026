@@ -84,10 +84,10 @@
                             {{ Str::limit($post->content, 100) }}
                         </p>
 
-                        {{-- Thông tin tác giả, danh mục và lượt bình luận (Lab 2 & Lab 3 - Tối ưu) --}}
+                        {{-- Thông tin tác giả, danh mục và lượt bình luận --}}
                         <div class="mb-2">
                             <small class="text-muted">
-                                👤 Tác giả: <strong class="text-dark">{{ $post->user->name ?? 'Ẩn danh' }}</strong>
+                                👤 Tác giả: <strong class="text-dark">{{ $post->author->name ?? 'Ẩn danh' }}</strong>
                                 &nbsp;·&nbsp;
                                 📁 Danh mục: <span
                                     class="badge bg-light text-dark border">{{ $post->category->name ?? 'Chưa phân loại' }}</span>
@@ -99,7 +99,7 @@
                             </small>
                         </div>
 
-                        {{-- Danh sách các thẻ Tag (Đã bổ sung bộ kiểm tra an toàn tích hợp liên kết) --}}
+                        {{-- Danh sách các thẻ Tag --}}
                         <div class="mt-2">
                             @foreach($post->tags as $tag)
                                 @if(!empty($tag->slug))
@@ -125,20 +125,18 @@
                 <div class="mt-3 pt-2 border-top d-flex gap-2">
                     <a href="{{ route('posts.show', $post->id) }}" class="btn btn-sm btn-outline-primary">👁 Xem chi tiết</a>
 
-                    {{-- Chỉ hiện nút Sửa/Xóa nếu user đang đăng nhập và là chủ sở hữu bài viết --}}
-                    @if(Auth::check() && Auth::id() === $post->user_id)
-                        <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-sm btn-outline-secondary">✏ Sửa</a>
+                    {{-- ✏️ NÚT SỬA BÀI VIẾT: Giữ nguyên hiển thị công khai theo ý bạn --}}
+                    <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-sm btn-outline-secondary">✏ Sửa</a>
 
-                        {{-- Form xóa --}}
-                        <form action="{{ route('posts.destroy', $post->id) }}" method="POST" style="display:inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                onclick="return confirm('Xóa bài viết này?')">
-                                🗑 Xóa
-                            </button>
-                        </form>
-                    @endif
+                    {{-- 🗑️ NÚT XÓA BÀI VIẾT: Giữ nguyên hiển thị công khai kèm xác nhận form --}}
+                    <form action="{{ route('posts.destroy', $post->id) }}" method="POST" style="display:inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Xóa bài viết này?')">
+                            🗑 Xóa
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

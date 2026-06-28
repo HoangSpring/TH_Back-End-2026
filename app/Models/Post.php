@@ -21,7 +21,7 @@ class Post extends Model
 
     // ── Local Scopes ────────────────────────────────
 
-    // Scope: chỉ lấy bài đã xuất bản (Đã sửa lỗi đồng bộ thời gian)
+    // Scope: chỉ lấy bài đã xuất bản
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', 'published')
@@ -57,7 +57,7 @@ class Post extends Model
 
     // ── Accessor ────────────────────────────────────
 
-    // Thời gian đọc ước tính - ĐÃ FIX LỖI CÚ PHÁP ĐỀ BÀI
+    // Thời gian đọc ước tính
     protected function readingTime(): Attribute
     {
         return Attribute::make(
@@ -66,22 +66,31 @@ class Post extends Model
     }
 
     // ── Relationships ────────────────────────────────
-    public function user()
+
+    /**
+     * 🌟 ĐÃ ĐỔI TÊN TỪ user() THÀNH author() ĐỂ KHỚP VỚI LAB 2 & TRÁNH LỖI 500
+     */
+    public function author()
     {
-        return $this->belongsTo(User::class);
+        // Khai báo rõ khóa ngoại 'user_id' để liên kết chính xác bảng users và posts
+        return $this->belongsTo(User::class, 'user_id');
     }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
     }
+
     public function comments()
     {
         return $this->hasMany(Comment::class);
     }
+
     public function approvedComments()
     {
         return $this->hasMany(Comment::class)->where('is_approved', true);
